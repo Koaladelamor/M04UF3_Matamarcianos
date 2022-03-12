@@ -1,0 +1,175 @@
+<!doctype html>
+
+<html>
+
+<head>
+<title>Matamarcianos Early Access</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+</head>
+
+<body>
+
+<h1>Last Ship Standing</h1>
+
+<script>
+
+let game_w = 800;
+let game_h = 600;
+
+let config = {
+	width: game_w,
+	height: game_h,
+
+	physics: {
+		default: 'arcade',
+		arcade: {
+			debug: true
+		}
+	},
+
+	scene: {
+		preload: preload,
+		create: create,
+		update: update
+	}
+}
+
+let game = new Phaser.Game(config);
+
+let player_speed = 2.2;
+let enemy_speed = 2;
+let enemies_size = 6;
+let enemies = [];
+let enemy_canMove = [];
+let spawnTimer = 0;
+let spawning = true;
+let timer;
+let bullets = [];
+let bullets_size = 3;
+let bullet_onScreen = [];
+
+let cursors;
+let keyW;
+let keyS;
+let spacebar;
+
+function preload () {
+	this.load.image("background", "background.png");
+	this.load.image("player", "player.png");
+	this.load.image("enemy", "enemy.png");
+	this.load.image("bullet", "bullet.png");
+
+}
+
+function create () {
+	cursors = this.input.keyboard.createCursorKeys();
+	keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+	keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+	spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+	background = this.add.image(game_w/2, game_h/2, "background");
+	player = this.add.image(60, game_h/2, "player");
+
+	enemy = this.add.image(game_w + 64, game_h/2, "enemy");
+	enemies.push(enemy);
+	enemy1 = this.add.image(game_w + 64, game_h/3, "enemy");
+	enemies.push(enemy1);
+	enemy2 = this.add.image(game_w + 64, game_h/4, "enemy");
+	enemies.push(enemy2);
+	enemy3 = this.add.image(game_w + 64, game_h/5, "enemy");
+	enemies.push(enemy3);
+	enemy4 = this.add.image(game_w + 64, game_h/6, "enemy");
+	enemies.push(enemy4);
+	enemy5 = this.add.image(game_w + 64, game_h/7, "enemy");
+	enemies.push(enemy5);
+
+	bullet1 = this.add.image(-20, 0, "bullet");
+	bullets.push(bullet1);
+	bullet2 = this.add.image(-20, 0, "bullet");
+	bullets.push(bullet2);
+	bullet3 = this.add.image(-20, 0, "bullet");
+	bullets.push(bullet3);
+
+	this.physics.add.existing(player, false);
+
+	for(let i = 0; i < bullets_size; i++){
+		bullet_onScreen[i] = false;
+	}
+
+	for (let i = 0; i < enemies_size; i++){
+		enemy_canMove.push(false);
+		this.physics.add.existing(enemies[i], false);
+		this.physics.add.collider(player, enemies[i], function(){
+			reset_positions();
+		});
+	}
+
+
+}
+
+function update (time, delta) {
+
+	if(cursors.down.isDown || keyS.isDown){
+		player.y += player_speed;
+	}
+	else if(cursors.up.isDown || keyW.isDown){
+		player.y -= player_speed;
+	}
+
+	if(player.y < 16){
+		player.y = 16;
+	} 
+	else if(player.y > game_h - 16){
+		player.y = game_h - 16;
+	}
+
+	
+	for (let i = 0; i < enemies_size; i++){
+		if(enemy_canMove[i] == true){
+
+			enemies[i].x -= enemy_speed;
+			
+		}
+	}
+
+	if(Phaser.Input.Keyboard.JustDown(spacebar)){
+		for (let i = 0; i < bullets_size; i++){
+			if(bullet_onScreen[i] == false) {
+				bullets[i].x = player.x + 32;
+				bullets[i].y = player.y;
+				bullet_onScreen[i] = true;
+				console.log("FIRE!!");
+				break;
+			}
+		}
+	}
+	
+	if(spawning){
+		for(let i = 0; i < enemies_size; i++){
+			if(enemy_canMove[i] == false){
+				spawnTimer += delta;
+				if (spawnTimer > 1800) {
+					enemy_canMove[i] = true;
+					spawnTimer = 0;
+				} else { break; }
+			}
+			if(enemy_canMove[i] && i == enemies_size){
+				spawning = false;
+			}
+		}
+	}
+
+}
+
+function reset_positions() {
+	for(let i = 0; i < enemies_size; i++){
+		enemies[i].x = game_w + 64;
+		enemy_canMove[i] = false;
+	}
+
+	spawning = true;
+}
+
+</script>
+</body>
+</html>
