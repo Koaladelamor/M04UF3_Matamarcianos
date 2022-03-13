@@ -13,6 +13,8 @@
 
 <script>
 
+document.body.style.backgroundColor = "grey";
+
 let game_w = 800;
 let game_h = 600;
 
@@ -23,7 +25,7 @@ let config = {
 	physics: {
 		default: 'arcade',
 		arcade: {
-			debug: true
+			debug: false
 		}
 	},
 
@@ -36,10 +38,21 @@ let config = {
 
 let game = new Phaser.Game(config);
 
-let player_speed = 2.2;
+let gameOver = false;
+
+let finalScore_txt;
+let score = 0;
+let lives = 3;
+let score_txt;
+let lives_txt;
+let gameOver_txt;
+
+let player_speed = 4.5;
 let enemy_speed = 2;
-let enemies_size = 6;
+let bullet_speed = 4.5;
+let enemies_size = 5;
 let enemies = [];
+let enemies_speed = [];
 let enemy_canMove = [];
 let spawnTimer = 0;
 let spawning = true;
@@ -70,41 +83,70 @@ function create () {
 	background = this.add.image(game_w/2, game_h/2, "background");
 	player = this.add.image(60, game_h/2, "player");
 
-	enemy = this.add.image(game_w + 64, game_h/2, "enemy");
+	enemy = this.add.image(game_w + 64, 350, "enemy");
 	enemies.push(enemy);
-	enemy1 = this.add.image(game_w + 64, game_h/3, "enemy");
+	enemy1 = this.add.image(game_w + 64, Phaser.Math.Between(50, 550), "enemy");
 	enemies.push(enemy1);
-	enemy2 = this.add.image(game_w + 64, game_h/4, "enemy");
+	enemy2 = this.add.image(game_w + 64, Phaser.Math.Between(50, 550), "enemy");
 	enemies.push(enemy2);
-	enemy3 = this.add.image(game_w + 64, game_h/5, "enemy");
+	enemy3 = this.add.image(game_w + 64, Phaser.Math.Between(50, 550), "enemy");
 	enemies.push(enemy3);
-	enemy4 = this.add.image(game_w + 64, game_h/6, "enemy");
+	enemy4 = this.add.image(game_w + 64, Phaser.Math.Between(50, 550), "enemy");
 	enemies.push(enemy4);
-	enemy5 = this.add.image(game_w + 64, game_h/7, "enemy");
-	enemies.push(enemy5);
 
-	bullet1 = this.add.image(-20, 0, "bullet");
+	bullet1 = this.add.image(-200, 0, "bullet");
 	bullets.push(bullet1);
-	bullet2 = this.add.image(-20, 0, "bullet");
+	bullet2 = this.add.image(-200, 0, "bullet");
 	bullets.push(bullet2);
-	bullet3 = this.add.image(-20, 0, "bullet");
+	bullet3 = this.add.image(-200, 0, "bullet");
 	bullets.push(bullet3);
 
 	this.physics.add.existing(player, false);
 
-	for(let i = 0; i < bullets_size; i++){
-		bullet_onScreen[i] = false;
-	}
 
 	for (let i = 0; i < enemies_size; i++){
 		enemy_canMove.push(false);
 		this.physics.add.existing(enemies[i], false);
 		this.physics.add.collider(player, enemies[i], function(){
 			reset_positions();
+			lives--;
+			lives_txt.text = lives.toString();
 		});
+		enemies_speed.push(2 + i/3);
+	}
+	
+	for(let i = 0; i < bullets_size; i++){
+		bullet_onScreen[i] = false;
+		this.physics.add.existing(bullets[i], false);
+		
+		for(let j = 0; j < enemies_size; j++) {
+			this.physics.add.collider(bullets[i], enemies[j], function(){
+				bullet_onScreen[i] = false;
+				bullets[i].x = -200;
+				enemies[j].x = Phaser.Math.Between(840, 2000);
+				enemies[j].y = Phaser.Math.Between(50, 550);
+				score++;
+				score_txt.text = score.toString();
+			});
+		}
 	}
 
+	this.add.text(25, 25, "Lives: ", {font:"24px Arial"});
+	lives_txt = this.add.text(100, 25, "3");
+	lives_txt.setFontSize(32);
 
+
+	this.add.text(250, 25, "Score: ", {font:"24px Arial"});
+	score_txt = this.add.text(322, 25, "0");
+	score_txt.setFontSize(32);
+
+	gameOver_txt = this.add.text(230, 260, "GAME OVER");
+	gameOver_txt.setFontSize(64);
+	gameOver_txt.visible = false;
+
+	finalScore_txt = this.add.text(300, 350, "Score: ", {font:"32px Arial"});
+	finalScore_txt.visible = false;
+	
 }
 
 function update (time, delta) {
@@ -122,13 +164,23 @@ function update (time, delta) {
 	else if(player.y > game_h - 16){
 		player.y = game_h - 16;
 	}
-
 	
 	for (let i = 0; i < enemies_size; i++){
 		if(enemy_canMove[i] == true){
+			enemies[i].x -= enemies_speed[i];
+			if(i == 1){
+				enemies[i].y = 300 + 200 * Math.sin(time/500);	
+			}
+		}
+	}
+	
+	for (let i = 0; i < bullets_size; i++){
+		if(bullet_onScreen[i] == true){
+			bullets[i].x += bullet_speed;
+		}
 
-			enemies[i].x -= enemy_speed;
-			
+		if(bullets[i].x > game_w + 10){
+			bullet_onScreen[i] = false;
 		}
 	}
 
@@ -138,7 +190,6 @@ function update (time, delta) {
 				bullets[i].x = player.x + 32;
 				bullets[i].y = player.y;
 				bullet_onScreen[i] = true;
-				console.log("FIRE!!");
 				break;
 			}
 		}
@@ -148,7 +199,7 @@ function update (time, delta) {
 		for(let i = 0; i < enemies_size; i++){
 			if(enemy_canMove[i] == false){
 				spawnTimer += delta;
-				if (spawnTimer > 1800) {
+				if (spawnTimer > 2000) {
 					enemy_canMove[i] = true;
 					spawnTimer = 0;
 				} else { break; }
@@ -158,17 +209,52 @@ function update (time, delta) {
 			}
 		}
 	}
+	
+	for(let i = 0; i < enemies_size; i++){
+		if(enemies[i].x < -64){
+			enemies[i].x = Phaser.Math.Between(1000, 2200);
+			lives--;
+			lives_txt.text = lives.toString();
+		}
+	}
+
+	if(lives <= 0){
+		gameOver = true;
+		reset_positions();
+		spawning = false;
+		lives = 3;
+		finalScore_txt.text = "Score: " + score.toString();
+		finalScore_txt.visible = true;
+		score = 0;
+		player.visible = false;
+		gameOver_txt.visible = true;
+	}
+
+	if(gameOver) {
+		spawnTimer += delta;
+		if(spawnTimer > 3000){
+			finalScore_txt.visible = false;
+			gameOver_txt.visible = false;
+			player.visible = true;
+			gameOver = false;
+			spawning = true;
+			lives_txt.text = lives.toString();
+		} 
+	}
 
 }
 
 function reset_positions() {
 	for(let i = 0; i < enemies_size; i++){
 		enemies[i].x = game_w + 64;
+		enemies[i].y = Phaser.Math.Between(40, 560);
 		enemy_canMove[i] = false;
 	}
-
+	spawnTimer = 0;
 	spawning = true;
 }
+
+
 
 </script>
 </body>
